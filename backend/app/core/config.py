@@ -69,6 +69,12 @@ class Settings(BaseSettings):
             path=self.POSTGRES_DB,
         )
 
+    # LDAP/Active Directory Configuration
+    LDAP_SERVER: str = "ldap://your-domain-controller.company.com"
+    LDAP_BASE_DN: str = "DC=company,DC=com"
+    LDAP_ADMIN_USER: str = "CN=service-account,OU=Service Accounts,DC=company,DC=com"
+    LDAP_ADMIN_PASSWORD: str = "service-account-password"
+
     SMTP_TLS: bool = True
     SMTP_SSL: bool = False
     SMTP_PORT: int = 587

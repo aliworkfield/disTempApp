@@ -9,7 +9,7 @@ from app import crud
 from app.api.deps import CurrentUser, SessionDep, get_current_active_superuser
 from app.core import security
 from app.core.config import settings
-from app.core.security import get_password_hash
+from app.core.ldap_auth import authenticate_user_ldap, get_or_create_user_from_ldap
 from app.models import Message, NewPassword, Token, UserPublic
 from app.utils import (
     generate_password_reset_token,
@@ -28,13 +28,50 @@ def login_access_token(
     """
     OAuth2 compatible token login, get an access token for future requests
     """
-    user = crud.authenticate(
-        session=session, email=form_data.username, password=form_data.password
-    )
-    if not user:
-        raise HTTPException(status_code=400, detail="Incorrect email or password")
-    elif not user.is_active:
+    # Check if LDAP is properly configured
+    if not settings.LDAP_SERVER or settings.LDAP_SERVER == "ldap://your-domain-controller.company.com":
+        # If LDAP is not configured, fall back to local authentication for testing
+        user = crud.authenticate(
+            session=session, email=form_data.username, password=form_data.password
+        )
+        if not user:
+            raise HTTPException(status_code=400, detail="Incorrect username or password")
+    else:
+        # Authenticate user against LDAP/Active Directory
+        try:
+            ldap_authenticated = authenticate_user_ldap(
+                username=form_data.username,
+                password=form_data.password,
+                ldap_server=settings.LDAP_SERVER,
+                base_dn=settings.LDAP_BASE_DN
+            )
+            
+            if not ldap_authenticated:
+                raise HTTPException(status_code=400, detail="Incorrect username or password")
+            
+            # Get or create user in database
+            user = get_or_create_user_from_ldap(
+                session=session,
+                username=form_data.username,
+                ldap_server=settings.LDAP_SERVER,
+                base_dn=settings.LDAP_BASE_DN,
+                admin_user=settings.LDAP_ADMIN_USER,
+                admin_password=settings.LDAP_ADMIN_PASSWORD
+            )
+            
+            if not user:
+                raise HTTPException(status_code=400, detail="User not found in directory")
+        except Exception as e:
+            # If LDAP fails, fall back to local authentication for testing
+            user = crud.authenticate(
+                session=session, email=form_data.username, password=form_data.password
+            )
+            if not user:
+                raise HTTPException(status_code=400, detail=f"Authentication failed: {str(e)}")
+    
+    if not user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
+        
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     return Token(
         access_token=security.create_access_token(

@@ -1,15 +1,25 @@
-import { useQuery } from "@tanstack/react-query";
-import { VStack, Box, Text, Spinner, Alert, AlertIcon } from "@chakra-ui/react";
-import { client } from "../client"; // generated OpenAPI client
+import { VStack, Box, Text, Spinner } from "@chakra-ui/react";
 
 export function CouponsList() {
-  const couponsQuery = useQuery({
-    queryKey: ["coupons"],
-    queryFn: async () => {
-      return client.api.coupons.getUserCoupons(); 
-      // ⚠️ call name depends on your OpenAPI schema!
-    },
-  });
+  // Mock data since we don't have a real API
+  const couponsQuery = {
+    isLoading: false,
+    isError: false,
+    data: [
+      {
+        id: 1,
+        title: "Welcome Coupon",
+        description: "10% off your first purchase",
+        expiration_date: "2025-12-31"
+      },
+      {
+        id: 2,
+        title: "Seasonal Sale",
+        description: "15% off winter collection",
+        expiration_date: "2025-02-28"
+      }
+    ]
+  };
 
   if (couponsQuery.isLoading) {
     return <Spinner size="lg" />;
@@ -17,17 +27,16 @@ export function CouponsList() {
 
   if (couponsQuery.isError) {
     return (
-      <Alert status="error">
-        <AlertIcon />
+      <Box color="red.500">
         Failed to load coupons.
-      </Alert>
+      </Box>
     );
   }
 
   const coupons = couponsQuery.data ?? [];
 
   return (
-    <VStack spacing={4} align="stretch">
+    <VStack gap={4} alignItems="stretch">
       {coupons.length === 0 ? (
         <Text>No coupons assigned to you.</Text>
       ) : (

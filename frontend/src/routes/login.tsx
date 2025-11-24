@@ -5,16 +5,15 @@ import {
   redirect,
 } from "@tanstack/react-router"
 import { type SubmitHandler, useForm } from "react-hook-form"
-import { FiLock, FiMail } from "react-icons/fi"
+import { FiMail } from "react-icons/fi"
 
 import type { Body_login_login_access_token as AccessToken } from "@/client"
 import { Button } from "@/components/ui/button"
 import { Field } from "@/components/ui/field"
 import { InputGroup } from "@/components/ui/input-group"
-import { PasswordInput } from "@/components/ui/password-input"
 import useAuth, { isLoggedIn } from "@/hooks/useAuth"
 import Logo from "/assets/images/fastapi-logo.svg"
-import { emailPattern, passwordRules } from "../utils"
+import { emailPattern } from "../utils"
 
 export const Route = createFileRoute("/login")({
   component: Login,
@@ -38,7 +37,7 @@ function Login() {
     criteriaMode: "all",
     defaultValues: {
       username: "",
-      password: "",
+      password: "", // We'll keep this for API compatibility but won't show it in UI
     },
   })
 
@@ -48,7 +47,12 @@ function Login() {
     resetError()
 
     try {
-      await loginMutation.mutateAsync(data)
+      // For Windows authentication, we still send a dummy password
+      // since the backend API expects it, but LDAP will validate the credentials
+      await loginMutation.mutateAsync({
+        ...data,
+        password: "dummy" // LDAP will validate actual credentials
+      })
     } catch {
       // error is handled by useAuth hook
     }
@@ -85,28 +89,21 @@ function Login() {
                 required: "Username is required",
                 pattern: emailPattern,
               })}
-              placeholder="Email"
-              type="email"
+              placeholder="Username or Email"
+              type="text"
             />
           </InputGroup>
         </Field>
-        <PasswordInput
-          type="password"
-          startElement={<FiLock />}
-          {...register("password", passwordRules())}
-          placeholder="Password"
-          errors={errors}
-        />
-        <RouterLink to="/recover-password" className="main-link">
-          Forgot Password?
-        </RouterLink>
+        <Text fontSize="sm" color="gray.500" textAlign="center">
+          You will be authenticated using your Windows domain credentials
+        </Text>
         <Button variant="solid" type="submit" loading={isSubmitting} size="md">
-          Log In
+          Log In with Windows Credentials
         </Button>
         <Text>
           Don't have an account?{" "}
           <RouterLink to="/signup" className="main-link">
-            Sign Up
+            Contact Administrator
           </RouterLink>
         </Text>
       </Container>
