@@ -51,7 +51,7 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
   return (
     <>
       <Text fontSize="xs" px={4} py={2} fontWeight="bold">
-        Menu
+        Menu 💎
       </Text>
       <Box>{listItems}</Box>
     </>

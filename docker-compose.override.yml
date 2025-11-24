@@ -10,8 +10,8 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     ports:
-      - "80:80"
-      - "8090:8080"
+      - "8080:80"   # Use 8080 on host instead of 80
+      - "8090:8080" # Dashboard port
     # Duplicate the command from docker-compose.yml to add --api.insecure=true
     command:
       # Enable Docker in Traefik, so that it reads labels from Docker services
@@ -53,7 +53,7 @@ services:
   adminer:
     restart: "no"
     ports:
-      - "8080:8080"
+      - "9080:8080"
 
   backend:
     restart: "no"

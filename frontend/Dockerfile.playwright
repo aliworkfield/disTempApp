@@ -1,13 +1,12 @@
-FROM node:20
+FROM mcr.microsoft.com/playwright:v1.47.0-focal
 
 WORKDIR /app
 
 COPY package*.json /app/
-
 RUN npm install
-
-RUN npx -y playwright install --with-deps
 
 COPY ./ /app/
 
 ARG VITE_API_URL=${VITE_API_URL}
+
+# Playwright browsers are already installed in this base image
