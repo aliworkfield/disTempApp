@@ -1,31 +1,54 @@
-from fastapi import APIRouter, Depends
-from pydantic.networks import EmailStr
+from fastapi import APIRouter, Depends, HTTPException
+from sqlmodel import Session
+from app.api.deps import SessionDep
+from app.core.config import settings
+from app.core.ldap_auth import authenticate_user_ldap
+from pydantic import BaseModel
 
-from app.api.deps import get_current_active_superuser
-from app.models import Message
-from app.utils import generate_test_email, send_email
-
-router = APIRouter(prefix="/utils", tags=["utils"])
-
-
-@router.post(
-    "/test-email/",
-    dependencies=[Depends(get_current_active_superuser)],
-    status_code=201,
-)
-def test_email(email_to: EmailStr) -> Message:
-    """
-    Test emails.
-    """
-    email_data = generate_test_email(email_to=email_to)
-    send_email(
-        email_to=email_to,
-        subject=email_data.subject,
-        html_content=email_data.html_content,
-    )
-    return Message(message="Test email sent")
+router = APIRouter(tags=["utils"])
 
 
-@router.get("/health-check/")
-async def health_check() -> bool:
+class LDAPTestRequest(BaseModel):
+    username: str
+    password: str
+
+
+class LDAPTestResponse(BaseModel):
+    success: bool
+    message: str
+
+
+@router.get("/utils/health-check/")
+def health_check() -> bool:
     return True
+
+
+@router.post("/utils/test-ldap-connection", response_model=LDAPTestResponse)
+def test_ldap_connection(request: LDAPTestRequest, session: SessionDep) -> LDAPTestResponse:
+    """
+    Test LDAP connection with provided credentials
+    """
+    try:
+        # Attempt to authenticate user against LDAP
+        ldap_authenticated = authenticate_user_ldap(
+            username=request.username,
+            password=request.password,
+            ldap_server=settings.LDAP_SERVER,
+            base_dn=settings.LDAP_BASE_DN
+        )
+        
+        if ldap_authenticated:
+            return LDAPTestResponse(
+                success=True,
+                message="LDAP connection successful! User authenticated."
+            )
+        else:
+            return LDAPTestResponse(
+                success=False,
+                message="LDAP authentication failed. Please check your credentials."
+            )
+    except Exception as e:
+        return LDAPTestResponse(
+            success=False,
+            message=f"LDAP connection error: {str(e)}"
+        )

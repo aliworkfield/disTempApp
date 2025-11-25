@@ -16,6 +16,7 @@ import { Route as ResetPasswordImport } from './routes/reset-password'
 import { Route as RecoverPasswordImport } from './routes/recover-password'
 import { Route as LoginImport } from './routes/login'
 import { Route as LayoutImport } from './routes/_layout'
+import { Route as CouponsIndexImport } from './routes/coupons/index'
 import { Route as LayoutIndexImport } from './routes/_layout/index'
 import { Route as LayoutSettingsImport } from './routes/_layout/settings'
 import { Route as LayoutItemsImport } from './routes/_layout/items'
@@ -45,6 +46,11 @@ const LoginRoute = LoginImport.update({
 
 const LayoutRoute = LayoutImport.update({
   id: '/_layout',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const CouponsIndexRoute = CouponsIndexImport.update({
+  path: '/coupons/',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -108,6 +114,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutIndexImport
       parentRoute: typeof LayoutImport
     }
+    '/coupons/': {
+      preLoaderRoute: typeof CouponsIndexImport
+      parentRoute: typeof rootRoute
+    }
   }
 }
 
@@ -124,6 +134,7 @@ export const routeTree = rootRoute.addChildren([
   RecoverPasswordRoute,
   ResetPasswordRoute,
   SignupRoute,
+  CouponsIndexRoute,
 ])
 
 /* prettier-ignore-end */
